@@ -1,0 +1,75 @@
+
+
+
+Chapter01
+Node Fundamentals
+
+presentation Ryan Dahl gave to introduce it. I think you’ll benefit by starting there as well. Search YouTube for “Ryan Dahl introduction to Node”.
+
+Other JavaScript engines
+Firefox: SpiderMonkey
+Safari: JavaScriptCore
+Bun: all-in-one JavaScript runtime
+
+any slow code can be managed with events and event handlers
+
+modules:
+CommonJS uses require(), older, loaded dynamically at runtime, synchronous, .js
+ES: uses import, newer, determined at compile time, can be statically analyzed and optimized, asynchronous, .mjs
+
+Setup for ES modules
+package.json file
+"type": "module"
+
+$ npm pkg set type=module
+
+named export
+export const server = createServer(...)
+
+export keyword
+export {
+	functionName,
+	ClassName,
+	name1,
+}
+
+default export syntax
+//assume in file named server.js
+export default server;
+
+import myServer from './server.js';
+OR
+import { default as myServer } from './server.js';
+
+
+import named exports individually
+import { functionName, name1 } from './module';
+
+import via *
+import * as myname from './module';
+
+timer functions return a unique timer ID, we can then use that ID to cancel the scheduled timer
+
+Non-Blocking Model
+
+Promise main pattern
+const outputPromise = slowOperation();
+outputPromise.then(
+  (output) => handlerFunction(output)
+);
+
+callback function example
+// read a file asynchronously
+import { readFile } from 'node:fs';
+
+readFile('/location', function cb(error, data) {
+	console.log(`Length: ${data.length}`);
+});
+console.log(`Process: ${process.pid}`);
+
+Node Built-In Modules
+require('repl').builtinModules
+
+
+Chapter02
+Scripts and Modules
