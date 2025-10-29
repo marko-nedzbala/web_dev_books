@@ -73,3 +73,67 @@ require('repl').builtinModules
 
 Chapter02
 Scripts and Modules
+
+Options and arguments
+$ node --check //checks the syntax of a Node script without running the script
+$ node --eval "some code"	//executes code directly from the command line
+$ node --print "some code"	//executes and runs some code
+
+Node is a wrapper around V8 and has CLI options, "node" command can use many V8 options as well
+$ node --v8-options		//get a list of the options
+
+Environment Variables
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
