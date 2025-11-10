@@ -71,6 +71,7 @@ Node Built-In Modules
 require('repl').builtinModules
 
 
+
 Chapter02
 Scripts and Modules
 
@@ -83,57 +84,499 @@ Node is a wrapper around V8 and has CLI options, "node" command can use many V8 
 $ node --v8-options		//get a list of the options
 
 Environment Variables
+process.env
+
+using an .env file
+PORT=3000
+NODE_DEBUG=fs,http
+
+$ node --env-file=.env script.js
+
+if you only need to resolve the module and not execute it, do not load the module, check to see if it exists
+CommonJS: require.resolve()
+ES modules: import.meta.resolve()
+
+Loading modules
+can load a JSON file
+
+CommonJS Modules
+const data = require('./file.json');
+
+ES modules with static import
+import data from './file.json
+	with { type: 'json' };
+
+ES modules with dynamic import
+const { default: data } = await import('./file.json', {
+	with: { type: 'json' },
+ });
+
+make a Node module executable from the CLI as a script, use require.main
+if (require.main === module) {
+	...code
+}
+
+CommonJS moules in Node are implicitly wrapped in a function and are passed 5 arugments:
+1.) exports
+2.) require
+3.) module
+4.) __filename
+5.) __dirname
+
+ES modules have a private scope
 
 
 
+Chapter03
+Asynchrony and events
+
+Node associates asynchronous operations with events and internally takes care of running them independently from other operations, once an asynchronous operation is done running, Node schedules the execution of your code that depends on that operation
+
+Promises
+good description on Promises
+
+The Event Loop
+1.) the call stack
+2.) event queues
+3.) event Loop
+
+Call stack
+LIFO structure, every time a function is called, a reference to it gets placed on top of the call stack, stacked function calls other functions a reference to each nested function gets placed on top of the call stack
+
+Event Queue
+when an asynchronous task is completed, Node places its associated handler function in a queue structure, the event queue (or task queue), a FIFO structure
+
+Event Loop
+for a handler function to run, it needs to be placed on the call stack
+when the event queue has handler function and the call stack is empty, it picks the first queued function in the event queue and puts it on the call stack to have V8 execute it
+then waits until the call stack is empty again to process the next queued handler function and keeps repearting that until there are no more handler functions in the event queue to process
+
+Event Emitters
+emitter objects emit named events that cause previously registered handler functions to be called
+
+an emitter object basically has 2 main features:
+1.) emitting named events
+2.) registering (and unregistering) listener functions
+
+
+class MyEmitter extends EventEmitter {}
+const MyEmitter = new MyEmitter();
+
+MyEmitter.emit('something-happend', data)
+
+//or within the MyEmitter class
+this.emit('something-happend', data);
+
+// fuller example
+class MyEmitter extends EventEmitter {
+	//...code
+	this.emit('myEventName', data);
+}
+
+const mine = new MyEmitter();
+reader.on('something-happend', (data) => {
+	//...code
+});
+
+Should always provide an error event
+
+withLog.on('error', (err) => {
+    console.log(err);
+});
+
+events are triggered to indicate a condition is met
 
 
 
+Chapter04
+Errors and Debugging
+
+Types of Errors
+
+Standard Errors: built-in errors provided by JavaScript itself
+SyntaxError, ReferenceError, RangeError, TypeError
+
+System Errors
+thrown when something unexpected happens on the system level
+
+Custom Errors
+errors created by you, the developer, to handle specific conditions
+
+Assertion Errors
+specific errors used primarily in testing and development environments
+
+Layered Error Management
+when different modules depend on each other
+custom error objects, can throw distinct errors for distinct conditions and give the upper layers that are using our code modules the chance to make exceptions for these distinct errors
+a catch block should always end in a throw error call to rethrow any unknown errors
+by rethrowing the error, we propagate it to the higher layers
+
+Error forwarding
+is commonly used in asynchronous and event-driven programming, where an error encountered in one function is not immediately handled within the function that threw it, but is instead passed along with any data to the next function in the sequence
+
+// example
+function myFunc(callback) {
+	getSomeData((err, data) => {
+		if(err) {
+			// forward the error
+			callback(err);
+			return;
+		}
+		// no error occurred, continue as normal
+		callback(null, data);
+	});
+}
+// to use
+myFunc((err, data) => {
+	if(err) {
+		// handle the error code
+		return;
+	}
+	//noraml operation code
+});
+
+// promise-based function
+function myFunc() {
+	return new Promise((resolve, reject) => {
+		getSomeData((err, data) => {
+			if(err) {
+				// forward the error
+				reject(err);
+			} else {
+				// resolving the promise if no error
+				resolve(data);
+			}
+		});
+	});
+}
+
+myFunc()
+	.then((data) => {
+		//normal operation code
+	})
+	.catch((err) => {
+		//handle the error code
+	});
+
+Make the function return either data (success) or error( failue) or both (partial success)
+unfiy the return into an object with both an error property and data property, or data/error object (better with TypeScript)
+
+//example of unify return object
+function myFunc() {
+	try {
+		let data = getSomeData();
+		return { error: null, data: data };
+	} catch (error) {
+		return { error: error, data: null };
+	}
+}
+
+const result = fetchData();
+if(result.error) {
+	//handle the error code
+} else {
+	//normal operation code
+}
+
+Debugging
+$ node inspect myFile.js
+
+Chrome browser DevTools
+$ node --inspect myFile.js
 
 
 
+Chapter05
+Package Management
+
+package: a folder that contains code
+module: a sigle file or a collection of related files that encapulate a set of functionality
+
+Some useful commands
+$ npm create
+$ npm show <package>
+$ npm search <search terms>
+$ npm list <package>
+$ npm link
+$ npm cache clean
+$ npm publish
+$ npm outdated
+$ npm prunce
+
+Semantic Versioning
+major.minor.patch
+
+major: breaking change
+minor: new features
+patch: bug fixes and security improvements
+
+* most recent version
+^ most recent minor version
+~ most recent patch
+
+npm SemVer Calculator
 
 
 
+Chapter06
+Streams
+
+streams process data over time
+
+streams are:
+1.) readable
+2.) writable
+3.) both (duplex or bidirectional stream)
+
+pipe method connects 2 stream objects
+readableSrc.pipe(writableDest);
+
+can use stream events
+
+//examples
+readable.on('data', chunk => {
+    writable.write(chunk);
+});
+
+readable.on('end', () => {
+    writable.end();
+});
+
+important readable stream events
+data event: emitted whenever the stream passes a chunk of data to the consumer
+end event: emitted when there is no more data to be consumed from the stream
+
+important writable stream events
+finish event: emitted when all data has been flushed to the underlying system
+drain event: signals the writable stream can receive more data
+
+2 main tasks with streams
+1.) Implementing the streams
+2.) Consuming the streams
+
+Implementing Streams
+
+Writable streams
+import { Writable } from 'node:stream';
+
+// 2 approches to implement
+class MyWritableStream extends Writable {
+    // ...
+}
+
+or constructor approach
+import { Writable } from 'node:stream';
+const outStream = new Writable({
+    write(chunk, encoding, callback) {
+        chunk.toString();
+        callback();
+    }
+});
+
+Readable streams
+
+import { Readable } from 'node:stream';
+const inStream = new Readable();
+inStream.push(moreData);
+
+better method
+const inStream = new Readable({
+    read(size) {
+        //code
+    }
+});
+
+Duplex/Transform Streams
+imprt { Duplex } from 'node:stream';
+
+const inoutStream = new Duplex({
+    write(chunk, encoding, callback) {
+        chunk.toString();
+        callback();
+    },
+    read(size) {
+        //code
+    }
+});
+
+process.stdin.pipe(inoutStream).pipe(process.stdout);
+
+the readable and writeable side of a duplex operate independently of each other
+
+Transform stream is computed from its output
+import { Transform } from 'node:stream';
+
+Consuming Streams
+
+Async Generators and Iterators
+
+Streams Object Mode
+by default streams expect buffer or string values
+objectMode flag can be set to have the stream accept any JavaScript object
+
+import { Transform } from 'node:stream';
+
+const example = new Transform({
+    readableObjectMode: true,
+
+    //method
+    },
+});
 
 
 
+Chapter07
+Child Modules
+
+can easily create a child process in a main Node process using node:child_process built-in module
+4 ways to do it:
+1.) spawn()
+2.) fork()
+3.) exec()
+4.) execFile()
+
+1.) spawn()
+launches a command in a new process
+
+can use the shell command and can be preferred to exec() because  spawn() buffers the I/O
+
+const child = spawn('dir', {
+    stdio: 'inherit',
+    shell: true
+});
+
+function example(code, signal) {
+    console.log(`Child process exited. Code: ${code} - Signal: ${signal}`);
+
+}
+
+child.on('exit', example);
+
+2.) fork()
+a variation of the spawn(), a channel for Interprocess Communication (IPC) is established to the child process when using fork(), so we can use the send() on the forked process along with the process object itself to exchange messages between the parent and forked processes by using the EventEmitter module interface
+
+3.) exec()
+create a shell, therefore can use any shell syntax with it
+
+import { exec } from 'node:child_process';
+
+exec('dir', (err, stdout, stderr) => {
+    console.log(`Stdout: ${stdout}`);
+});
+
+buffers the command's generated output and passes the whole output value to a callback function (instead of using streams like spawn does)
+
+4.) execFile()
+behaves exactly like the exec(), but does not use the shell, more efficient and secure, can use it to execute an external program or a script
+
+import { execFile } from 'node:child_process';
+
+import { execFile } from 'node:child_process';
+
+execFile('python', ['myFile.py'], (error, stdout, stderr) => {
+    if(error) {
+        console.error(`Error: ${error}`);
+        return;
+    }
+    console.log(`Completed: ${stdout}`);
+});
 
 
 
+Chapter8
+Testing Node
+
+import test from 'node:test';
+import assert from 'node:assert/strict';
+
+Arrange-Act-Asert pattern
+Arrange: the setup, prepare the environment and prerequistes of the test
+Act: where we execute the method we want to test
+Assert: confirm our expectations
 
 
 
+Chapter09
+Scaling Node
+
+can run the same Node process on multiple CPU core and load balance the requests along them
+node:cluster module
+
+Strategies of Scalability
+Cloning: clone an application multiple times and have each cloned instance handle part of the workload
+Decomposing: decompose based on functionalities and services
+Splitting: split the application into multiple instances where each instance is responsbile for only 1 part of the application's data (sharding)
+
+Cluster Module
+load testing your web server
+$ npx loadtest http://localhost:3000/
+
+Simple example of using multiple processes
+
+import { createServer } from 'node:http';
+import cluster from 'node:cluster';
+import os from 'node:os';
+
+
+if(cluster.isPrimary) {
+    const cpus = os.availableParallelism();
+    console.log(`Forking for ${cpus} CPUs`);
+    for (let i = 0; i < cpus; i++) {
+        cluster.fork();
+    }
+} else {
+    createServer((req, res) => {
+        for(let i = 0; i < 1e8; i++) {
+            //simulate cpu work
+        };
+        res.end();
+    }).listen(3000, () => {
+        console.log(`Process ${process.pid}`);
+    });
+}
+
+Broadcasting Messages
+cluster.workers()
+
+Handling State
+sticky session: a simple example of splitting scaling strategy, a record is kept of the primary purpose
+
+Process Managers
+advanced process manager for Node is PM2
 
 
 
+Chapter10
+Practical Node
 
+Code Quality Tools
+Prettier
+ESLint
 
+Module Bundlers
+Webpacl
+Parcel
+Rollup
 
+Local work-flows with Node
+npm pre and post scripts
+npm-run-all
+Husky
+Live Server
 
+Task Runners
+run and automate repetitive tasks in different environements
+gulp
+Grunt
 
+Frameworks
+Express
+Koa
+hapi
+AdonisJS
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+Higher-level Frameworks
+Apollo Server: GraphQL-based API servers
+Socket.IO: real-time applications
+Strapi: Content Management Systems (CMS)
+Mailchimp Open Commerce: for eCommerce applications
